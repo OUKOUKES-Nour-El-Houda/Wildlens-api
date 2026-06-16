@@ -1,6 +1,5 @@
 name: CD - Deploy to Production
 
-# Se déclenche uniquement quand la CI se termine avec succès sur main
 on:
   workflow_run:
     workflows: ["CI - Build, Test & Quality"]
@@ -11,8 +10,11 @@ jobs:
   deploy-prod:
     name: Deploy to Render Production
     runs-on: ubuntu-latest
-    environment: production  # Bloque jusqu'à approbation manuelle
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: production
+    # Condition stricte : uniquement après un PUSH (pas une PR) et si CI réussie
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
 
     steps:
       - name: Checkout
@@ -20,48 +22,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Récupère la version sémantique créée par release.yml
-      - name: Get release version
+      - name: Get version
         id: version
         run: |
           git fetch --tags
-          LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n1)
-          echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          TAG=$(git tag -l "v*" | sort -V | tail -n1)
+          echo "tag=${TAG:-non-versionné}" >> $GITHUB_OUTPUT
 
-      - name: Pre-deployment summary
+      - name: Deploy to Render
         run: |
-          echo "=========================================="
-          echo "DÉPLOIEMENT PRODUCTION EN ATTENTE D'APPROBATION"
-          echo "Version  : ${{ steps.version.outputs.tag }}"
-          echo "Commit   : ${{ github.event.workflow_run.head_sha }}"
-          echo "Acteur   : ${{ github.actor }}"
-          echo "=========================================="
-
-      # Render tire l'image ghcr.io/.../wildlens-api:latest depuis GHCR
-      - name: Deploy image to Render Production
-        run: |
-          echo "Déploiement version ${{ steps.version.outputs.tag }} en production..."
+          echo "Déploiement production — version ${{ steps.version.outputs.tag }}"
           curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
 
-      - name: Wait and health check
+      - name: Health check
         run: |
           echo "Attente du démarrage (90s)..."
           sleep 90
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             https://wildlens-api-prod.onrender.com/actuator/health || echo "000")
-          echo "HTTP Status: $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "Health check production échoué (status $STATUS)"
-            exit 1
-          fi
-          echo "Production opérationnelle ✓"
-
-      - name: Deployment summary
-        run: |
-          echo "=========================================="
-          echo "DÉPLOIEMENT PRODUCTION RÉUSSI"
-          echo "Version  : ${{ steps.version.outputs.tag }}"
-          echo "Commit   : ${{ github.event.workflow_run.head_sha }}"
-          echo "URL      : https://wildlens-api-prod.onrender.com"
-          echo "Swagger  : https://wildlens-api-prod.onrender.com/swagger-ui/index.html"
-          echo "=========================================="
+          echo "Status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "Production OK ✓" || (echo "Health check échoué" && exit 1)
