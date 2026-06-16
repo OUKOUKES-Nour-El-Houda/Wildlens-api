@@ -53,6 +53,10 @@ public class InfoSpeciesService {
         return new InfoSpeciesDtoOut(infoSpecies);
 
     }
+    public long countSpecies() {
+        return infoSpeciesRepository.count();
+    }
+
     public void deleteInfoSpecies(Long infoSpeciesId){
         InfoSpecies infoSpecies = infoSpeciesRepository.findById(infoSpeciesId)
                 .orElseThrow(() -> new ResponseStatusException(NO_CONTENT, "Species for id" + infoSpeciesId + "already deleted or never creates"));
