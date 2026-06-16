@@ -31,8 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-### Secrets — ne jamais committer ###
-.env
-deploy/**/.env
-*.env.local
