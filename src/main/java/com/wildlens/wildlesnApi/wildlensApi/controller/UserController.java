@@ -29,7 +29,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping(value = "/Users")
-    @Operation(summary = "Endpoint to get list of users", description = "Endpoint to get list of users")
+    @Operation(summary = "Endpoint to get list of users", description = "Endpoint to get list of users updated after pipeline")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "users list found", content = {@Content(array = @ArraySchema(schema = @Schema(implementation = UserDtoOut.class)))}),
             @ApiResponse(responseCode = "204", description = "No components type found", content = @Content(schema = @Schema()))
