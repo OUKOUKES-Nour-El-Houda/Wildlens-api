@@ -170,6 +170,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Configure Buildx avec le driver docker-container
+      # Nécessaire pour activer le cache GHA (non supporté par le driver docker par défaut)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       # Authentification sur GitHub Container Registry avec le token GitHub
       # automatiquement disponible dans chaque workflow (pas besoin de secret)
       - name: Log in to GitHub Container Registry
