@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -30,6 +31,15 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class InfoSpeciesController {
 
     private final InfoSpeciesService infoSpeciesService;
+
+    @GetMapping(value = "/infoSpecies/count")
+    @Operation(summary = "Count species", description = "Returns the total number of species in the database")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Count returned", content = @Content(schema = @Schema(implementation = Map.class)))
+    })
+    public ResponseEntity<Map<String, Long>> countSpecies() {
+        return ResponseEntity.ok(Map.of("count", infoSpeciesService.countSpecies()));
+    }
 
     @GetMapping(value="/infoSpecies")
     @Operation(summary = "Endpoint to get info species", description = "Endpoint to get all species")

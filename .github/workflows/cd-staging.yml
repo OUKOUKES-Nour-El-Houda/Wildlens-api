@@ -19,22 +19,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set lowercase owner
-        id: vars
-        run: |
-          echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-          SHORT_SHA=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)
-          echo "image=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/wildlens-api:sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
-
       - name: Verify image in GHCR
         run: |
-          docker manifest inspect ${{ steps.vars.outputs.image }} \
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          SHORT_SHA=$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)
+          IMAGE="ghcr.io/${OWNER}/wildlens-api:sha-${SHORT_SHA}"
+          echo "Vérification de l'image : $IMAGE"
+          docker manifest inspect "$IMAGE" \
             && echo "Image confirmée dans GHCR ✓" \
-            || (echo "Image introuvable : ${{ steps.vars.outputs.image }}" && exit 1)
+            || (echo "Image introuvable : $IMAGE" && exit 1)
 
       - name: Deploy to Render
         run: |
-          echo "Déploiement staging — ${{ steps.vars.outputs.image }}"
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          SHORT_SHA=$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)
+          echo "Déploiement : ghcr.io/${OWNER}/wildlens-api:sha-${SHORT_SHA}"
           curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}"
 
       - name: Health check
