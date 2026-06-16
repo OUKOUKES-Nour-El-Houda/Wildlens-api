@@ -42,7 +42,7 @@ jobs:
       # On sauvegarde les classes compilées comme artifact
       # Les jobs suivants le téléchargent au lieu de recompiler
       - name: Save compiled classes
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: compiled-classes
           path: target/
@@ -107,7 +107,7 @@ jobs:
       # Publier le rapport de tests même si les tests échouent
       # Permet de voir quels tests ont échoué directement sur GitHub
       - name: Publish test report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
