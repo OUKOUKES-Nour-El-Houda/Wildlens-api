@@ -11,7 +11,6 @@ jobs:
     name: Deploy to Render Staging
     runs-on: ubuntu-latest
     environment: staging
-    # Condition stricte : uniquement après un PUSH (pas une PR) et si CI réussie
     if: |
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push'
@@ -20,9 +19,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set lowercase owner
+        id: vars
+        run: |
+          echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          SHORT_SHA=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)
+          echo "image=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/wildlens-api:sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Verify image in GHCR
+        run: |
+          docker manifest inspect ${{ steps.vars.outputs.image }} \
+            && echo "Image confirmée dans GHCR ✓" \
+            || (echo "Image introuvable : ${{ steps.vars.outputs.image }}" && exit 1)
+
       - name: Deploy to Render
         run: |
-          echo "Déploiement staging — commit ${{ github.event.workflow_run.head_sha }}"
+          echo "Déploiement staging — ${{ steps.vars.outputs.image }}"
           curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}"
 
       - name: Health check

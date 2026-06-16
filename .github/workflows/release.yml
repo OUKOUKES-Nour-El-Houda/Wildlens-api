@@ -95,13 +95,15 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           SHORT_SHA=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)
-          SHA_IMAGE="ghcr.io/${{ github.repository_owner }}/wildlens-api:sha-${SHORT_SHA}"
+          OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          SHA_IMAGE="ghcr.io/${OWNER}/wildlens-api:sha-${SHORT_SHA}"
 
+          OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
           docker pull $SHA_IMAGE
-          docker tag $SHA_IMAGE ghcr.io/${{ github.repository_owner }}/wildlens-api:${{ steps.version.outputs.tag }}
-          docker tag $SHA_IMAGE ghcr.io/${{ github.repository_owner }}/wildlens-api:latest
-          docker push ghcr.io/${{ github.repository_owner }}/wildlens-api:${{ steps.version.outputs.tag }}
-          docker push ghcr.io/${{ github.repository_owner }}/wildlens-api:latest
+          docker tag $SHA_IMAGE ghcr.io/${OWNER}/wildlens-api:${{ steps.version.outputs.tag }}
+          docker tag $SHA_IMAGE ghcr.io/${OWNER}/wildlens-api:latest
+          docker push ghcr.io/${OWNER}/wildlens-api:${{ steps.version.outputs.tag }}
+          docker push ghcr.io/${OWNER}/wildlens-api:latest
           echo "Image taguée : ${{ steps.version.outputs.tag }} + latest"
 
       # Prépare la prochaine itération de développement
