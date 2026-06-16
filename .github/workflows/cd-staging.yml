@@ -1,7 +1,11 @@
-name: CD — Deploy to Staging
+name: CD - Deploy to Staging
 
+# Se déclenche uniquement quand la CI se termine avec succès sur develop
+# Cela garantit que l'image Docker est bien dans GHCR avant de déployer
 on:
-  push:
+  workflow_run:
+    workflows: ["CI - Build, Test & Quality"]
+    types: [completed]
     branches: [develop]
 
 jobs:
@@ -9,17 +13,40 @@ jobs:
     name: Deploy to Render Staging
     runs-on: ubuntu-latest
     environment: staging
+    # N'exécute le déploiement que si la CI a réussi
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Trigger Render deploy
-        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}"
-
-      - name: Attendre le démarrage et vérifier la santé
+      # Récupère le SHA du commit qui a déclenché la CI
+      - name: Get commit SHA from CI run
+        id: image
         run: |
-          echo "Déploiement en cours, attente 90s (cold start inclus)..."
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          SHORT_SHA=$(echo $SHA | cut -c1-7)
+          IMAGE="ghcr.io/${{ github.repository_owner }}/wildlens-api:sha-${SHORT_SHA}"
+          echo "tag=$IMAGE" >> $GITHUB_OUTPUT
+          echo "Image à déployer : $IMAGE"
+
+      # Vérifie que l'image existe dans GHCR
+      - name: Verify image in GHCR
+        run: |
+          docker manifest inspect ${{ steps.image.outputs.tag }} \
+            && echo "Image confirmée dans GHCR ✓" \
+            || (echo "Image introuvable" && exit 1)
+
+      # Déclenche Render — qui tire maintenant l'image depuis GHCR (mode Docker Image)
+      # L'image configurée dans Render est ghcr.io/.../wildlens-api:develop
+      - name: Deploy image to Render Staging
+        run: |
+          echo "Déploiement de ${{ steps.image.outputs.tag }} sur Render Staging..."
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}"
+
+      - name: Wait and health check
+        run: |
+          echo "Attente du démarrage (90s)..."
           sleep 90
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             https://wildlens-api-staging.onrender.com/actuator/health || echo "000")
@@ -29,3 +56,14 @@ jobs:
             exit 1
           fi
           echo "Staging opérationnel ✓"
+          echo "Image déployée : ${{ steps.image.outputs.tag }}"
+
+      - name: Deployment summary
+        run: |
+          echo "=========================================="
+          echo "DÉPLOIEMENT STAGING RÉUSSI"
+          echo "Image    : ${{ steps.image.outputs.tag }}"
+          echo "Commit   : ${{ github.event.workflow_run.head_sha }}"
+          echo "URL      : https://wildlens-api-staging.onrender.com"
+          echo "Swagger  : https://wildlens-api-staging.onrender.com/swagger-ui/index.html"
+          echo "=========================================="
