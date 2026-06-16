@@ -1,0 +1,14 @@
+package com.wildlens.wildlesnApi.wildlensApi;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class WildlensApiApplication {
+
+	public static void main(String[] args) {
+
+		SpringApplication.run(WildlensApiApplication.class, args);
+	}
+
+}

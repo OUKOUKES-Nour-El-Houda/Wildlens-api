@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: wildlens-api-staging
+    env: docker
+    dockerfilePath: ./Dockerfile
+    region: frankfurt
+    plan: free
+    # autoDeploy désactivé : c'est GitHub Actions qui contrôle les déploiements
+    autoDeploy: false
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: staging
+      - key: DB_SCHEMA
+        value: wildlens_staging
+      - key: APP_URL
+        value: https://wildlens-api-staging.onrender.com
+      # Les secrets suivants sont à renseigner manuellement dans le dashboard Render
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
