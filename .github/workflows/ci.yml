@@ -173,7 +173,7 @@ jobs:
       # Configure Buildx avec le driver docker-container
       # Nécessaire pour activer le cache GHA (non supporté par le driver docker par défaut)
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Authentification sur GitHub Container Registry avec le token GitHub
       # automatiquement disponible dans chaque workflow (pas besoin de secret)
