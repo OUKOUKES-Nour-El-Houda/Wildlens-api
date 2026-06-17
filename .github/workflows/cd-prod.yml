@@ -11,10 +11,12 @@ jobs:
     name: Deploy to Render Production
     runs-on: ubuntu-latest
     environment: production
-    # Condition stricte : uniquement après un PUSH (pas une PR) et si CI réussie
+    # Uniquement sur push, CI réussie, et pas un commit du release bot
     if: |
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push'
+      github.event.workflow_run.event == 'push' &&
+      !startsWith(github.event.workflow_run.head_commit.message, 'release:') &&
+      !startsWith(github.event.workflow_run.head_commit.message, 'chore: prepare next')
 
     steps:
       - name: Checkout

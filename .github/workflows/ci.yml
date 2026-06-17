@@ -74,7 +74,7 @@ jobs:
           DB_URL: jdbc:postgresql://localhost:5432/wildlens_test
           DB_USER: postgres
           DB_PASSWORD: postgres
-          DB_SCHEMA: wildlens_test
+          DB_SCHEMA: public
           JWT_SECRET: ciTestSecret
           APP_URL: http://localhost:8082
 
@@ -115,7 +115,6 @@ jobs:
         if: ${{ env.SONAR_HOST_URL == '' }}
         run: echo "SONAR_HOST_URL non configuré — analyse ignorée."
 
-  # Ne tourne QUE sur push (pas sur PR) et uniquement après les tests
   docker-build-push:
     name: Docker Build & Push
     runs-on: ubuntu-latest
