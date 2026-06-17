@@ -11,4 +11,6 @@ RUN ./mvnw package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 COPY --from=build /usr/app/target/*.jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV SPRING_PROFILES_ACTIVE=prod
+EXPOSE 8082
+ENTRYPOINT ["java", "-jar", "/app.jar"]
