@@ -17,6 +17,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,6 +58,16 @@ class InfoSpeciesServiceTest {
         assertThatThrownBy(() -> infoSpeciesService.getSpeciesById(99L))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("99");
+    }
+
+    @Test
+    void countSpecies_shouldReturnRepositoryCount() {
+        when(infoSpeciesRepository.count()).thenReturn(42L);
+
+        long result = infoSpeciesService.countSpecies();
+
+        assertThat(result).isEqualTo(42L);
+        verify(infoSpeciesRepository).count();
     }
 
     @Test
