@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.wildlens.wildlesnApi</groupId>
 	<artifactId>wildlensApi</artifactId>
-	<version>1.0.328-SNAPSHOT</version>
+	<version>1.0.328</version>
 	<name>wildlensApi</name>
 	<description>project wildlens for Spring Boot</description>
 	<url/>
