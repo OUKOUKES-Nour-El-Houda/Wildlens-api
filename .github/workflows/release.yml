@@ -14,9 +14,12 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    # Ne tourne QUE sur push, CI réussie, ET pas un commit du release bot
     if: |
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push'
+      github.event.workflow_run.event == 'push' &&
+      !startsWith(github.event.workflow_run.head_commit.message, 'release:') &&
+      !startsWith(github.event.workflow_run.head_commit.message, 'chore: prepare next')
 
     steps:
       - name: Checkout
@@ -37,12 +40,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # Calcule la prochaine version selon le dernier commit
-      # feat: → minor bump (1.0.0 → 1.1.0)
-      # fix / autres → patch bump (1.0.0 → 1.0.1)
       - name: Compute next version
         id: version
         run: |
+          git fetch --tags
           LATEST=$(git tag -l "v*" | sort -V | tail -n1)
 
           if [ -z "$LATEST" ]; then
@@ -69,20 +70,17 @@ jobs:
           echo "next_snapshot=${NEXT%.*}.$((${NEXT##*.} + 1))-SNAPSHOT" >> $GITHUB_OUTPUT
           echo "Prochaine version : $NEXT"
 
-      # Met à jour pom.xml avec la version de release (sans SNAPSHOT)
       - name: Set release version in pom.xml
         run: |
           ./mvnw versions:set -DnewVersion=${{ steps.version.outputs.version }} -DgenerateBackupPoms=false
           git add pom.xml
           git commit -m "release: ${{ steps.version.outputs.tag }}"
 
-      # Crée le tag Git sur ce commit
       - name: Create Git tag
         run: |
           git tag ${{ steps.version.outputs.tag }}
           git push origin main --follow-tags
 
-      # Crée la GitHub Release avec notes auto-générées depuis les commits
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -90,23 +88,20 @@ jobs:
           name: "Release ${{ steps.version.outputs.tag }}"
           generate_release_notes: true
 
-      # Retague l'image Docker avec la version et latest
       - name: Tag Docker image with version
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          SHORT_SHA=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)
           OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          SHORT_SHA=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)
           SHA_IMAGE="ghcr.io/${OWNER}/wildlens-api:sha-${SHORT_SHA}"
 
-          OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull $SHA_IMAGE
           docker tag $SHA_IMAGE ghcr.io/${OWNER}/wildlens-api:${{ steps.version.outputs.tag }}
           docker tag $SHA_IMAGE ghcr.io/${OWNER}/wildlens-api:latest
           docker push ghcr.io/${OWNER}/wildlens-api:${{ steps.version.outputs.tag }}
           docker push ghcr.io/${OWNER}/wildlens-api:latest
-          echo "Image taguée : ${{ steps.version.outputs.tag }} + latest"
+          echo "Image taguée : ${{ steps.version.outputs.tag }} + latest ✓"
 
-      # Prépare la prochaine itération de développement
       - name: Bump to next SNAPSHOT version
         run: |
           ./mvnw versions:set -DnewVersion=${{ steps.version.outputs.next_snapshot }} -DgenerateBackupPoms=false
