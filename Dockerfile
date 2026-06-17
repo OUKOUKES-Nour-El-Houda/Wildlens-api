@@ -9,6 +9,6 @@ ADD . $HOME
 RUN chmod +x mvnw
 RUN ./mvnw package -DskipTests
 
-FROM eclipse-temurin:21-jdk-alpine
-COPY target/*.jar app.jar
+FROM eclipse-temurin:21-jre-alpine
+COPY --from=build /usr/app/target/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
